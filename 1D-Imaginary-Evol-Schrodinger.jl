@@ -2,61 +2,66 @@ using FFTW
 using QuadGK
 using Plots
 
-δx = 10^(-6) #Grid spacing
-t = 1 #Complete time evolution
-δt = 10^(-4) #Time step spacing
+δx = 10^(-6) #Grid spacing (Most practical + accurate spacing on my machine)
+L = 1 #Interval Size
 
-function IC(xArray :: Vector{Float64})
-    yArray = sqrt(2) .* sin.(π.*xArray) #Initial Condition Wavefunction
+t = 1 #Complete time evolution
+δt = 10^(-2) #Time step spacing
+
+mass = 1 #Particle mass
+
+m = 0 #Real line starting value
+xGrid = LinRange(m, L, Int64(1/(δx))) #Creates 1D discrete line of real space
+k = π/(L) .* (-Int64(1/(δx))/2 : Int64(1/(δx))/2 - 1) #Creates 1D discrete line of momentum space
+
+potentialArray = zeros(Int64(1/δx)) #Potential values at each point on the grid
+
+function IC(xArray)
+    yArray = sqrt(2) .* sin.(π.* xArray) #Initial Condition Wavefunction
     return yArray #Numerical Array representing wavefunction
 end
 
-function kineticOperatorStep(m, ψ, xArray) #Time Step Operation for the Kinetic Operator
-    kDomain = fft(ψ)
-    N = length(ψ)
-    k = (δx/N) .* xArray #Transforming the real line grid into the momentum space grid
-    weightApplication = exp.((-k.^2)./(2*m) .* (δt / 2)) .* kDomain #Weighting each value in momentum space by the diagonalization factor
-    xDomain = ifft(weightApplication)
+function kineticOperatorStep(m, ψ1) #Time Step Operation for the Kinetic Operator 
+    weights = exp.(-1*((k.^2)./(2*m)) .* (δt / 2)) #Calculation of the diagonalization factor
+    weightedψ = weights .* fft(ψ1)  #Weighting each value in momentum space by the diagonalization factor
+    xDomain = ifft(weightedψ)
     return xDomain
 end
 
-function potentialOperatorStep(V, ψ) #Time Step Operation for the Potential Operator
-    operatedPsi = exp.(-V .* δt) .* ψ 
+function potentialOperatorStep(V, ψ1) #Time Step Operation for the Potential Operator
+    operatedPsi = exp.(V .* δt ) .* ψ1 
     return operatedPsi
 end
 
-function normalization(ψ) #Normalization of the Wavefunction (done discretely)
-    absPsi = abs2.(ψ)
-    L2Norm = sqrt(sum(absPsi .* δx)) #Discrete L2 calculation with grid space weighting
-    return (ψ / L2Norm)
+function normalization(ψ1) #Normalization of the Wavefunction (done discretely)
+    L2Norm = sqrt(sum(abs2.(ψ1) .* δx)) #Discrete L2 calculation with grid space weighting
+    return (ψ1 ./ L2Norm)
 end
 
 
 
 τ = δt #time step counter
-i = 1/(δx) #Number of discrete values on the real line grid
-mass = 1 #Particle mass
-
-m = 0 #Real line starting value
-xGrid = Array(m:δx:(m+((i-1)*δx))) #Creates 1D discrete line of real space
 ϵ = 10^-20 #Convergence factor
 
-potentialArray = zeros(Int64(i)) #Potential values at each point on the grid
-ψ = IC(xGrid) #Initial condition
+ψ = IC(xGrid) #Initial condition Assignment
 
 while τ <= t
-    
-    ψ0 = ψ
 
     #Split-Step Evolution
-    global ψ = kineticOperatorStep(mass, ψ, xGrid)
+    global ψ = kineticOperatorStep(mass, ψ)
+    #print(maximum(real(ψ)) )
     ψ = normalization(ψ)
+    #print(maximum(real(ψ)))
     ψ = potentialOperatorStep(potentialArray, ψ)
-    ψ = kineticOperatorStep(mass, ψ, xGrid)
+    #print(maximum(real(ψ)))
+    ψ = kineticOperatorStep(mass, ψ)
+    #print(maximum(real(ψ)))
     ψ = normalization(ψ)
+    println(maximum(real(ψ)))
 
     global τ += δt
 end
 
 
 plot(xGrid, real(ψ), label = "Re(ψ(x, t))", xlabel = "Position(x)", ylabel = "Wavefunction(ψ)")
+ylims!(minimum(real(ψ)), maximum(real(ψ)))
