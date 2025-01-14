@@ -4,17 +4,18 @@ using Plots
 
 δx = 10^(-6) #Grid spacing (Most practical + accurate spacing on my machine)
 L = 1 #Interval Size
+i = 10^6
 
 t = 1 #Complete time evolution
 δt = 10^(-2) #Time step spacing
 
 mass = 1 #Particle mass
 
-m = 0 #Real line starting value
-xGrid = LinRange(m, L, Int64(1/(δx))) #Creates 1D discrete line of real space
-k = π/(L) .* (-Int64(1/(δx))/2 : Int64(1/(δx))/2 - 1) #Creates 1D discrete line of momentum space
+n = 0 #Real line starting value
+xGrid = LinRange(n, L, Int64(i)) #Creates 1D discrete line of real space
+k = π/(L) .* vcat(0:Int64((i))/2 - 1, -Int64((i))/2:-1) #Creates 1D discrete line of momentum space
 
-potentialArray = zeros(Int64(1/δx)) #Potential values at each point on the grid
+potentialArray = zeros(Int64(i)) #Potential values at each point on the grid
 
 function IC(xArray)
     yArray = sqrt(2) .* sin.(π.* xArray) #Initial Condition Wavefunction
