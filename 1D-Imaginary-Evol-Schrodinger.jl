@@ -22,7 +22,7 @@ end
 
 function kineticOperatorStep(m, ψ1) #Time Step Operation for the Kinetic Operator 
     weights = exp.(-1*((k.^2)./(2*m)) .* (δt / 2)) #Calculation of the diagonalization factor
-    weightedψ = weights .* fft(ψ1)  #Weighting each value in momentum space by the diagonalization factor
+    weightedψ = weights .* fftshift(fft(ψ1))  #Weighting each value in momentum space by the diagonalization factor
     xDomain = ifft(weightedψ)
     return xDomain
 end
