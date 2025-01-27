@@ -3,28 +3,28 @@ using LinearAlgebra
 using Plots
 
 δx = 10^(-4) #Grid spacing (Most practical + accurate spacing on my machine)
-L = 10 #Interval Size
+L = 30 #Interval Size
 i = 10^4
 
 mass = 1 #Particle mass
 δt = 10^(-2) #Time step spacing
 j = 10^2
 
-n = -5 #Real line starting value
+n = -15 #Real line starting value
 xGrid = LinRange(n, L+n, Int64(i)) #Creates 1D discrete line of real space
 k = LinRange(-π/(L), π/(L), Int64(i)) #Creates 1D discrete line of momentum space
 
 potentialArray = .05 .* (xGrid).^2 #Potential values at each point on the grid
 
 function IC(xArray)
-    yArray = (1/(sqrt(10)*π))^(1/2) .* exp.(-((xArray).^2) ./ (2*sqrt(10))) #Initial Condition Wavefunction
+    yArray = (1/(sqrt(10)*π))^(1/2) .* exp.(-((xArray.+5).^2) ./ (2*sqrt(10))) #Initial Condition Wavefunction
     return yArray #Numerical Array representing wavefunction
 end
 
 function kineticOperatorStep(m, ψ1) #Time Step Operation for the Kinetic Operator 
     weights = exp.(-1*((k.^2)./(2*m)) .* (δt / 2)) #Calculation of the diagonalization factor
-    weightedψ = weights .* (fft(ψ1))  #Weighting each value in momentum space by the diagonalization factor
-    xDomain = ifft(weightedψ)
+    weightedψ = weights .* (fftshift(fft(ψ1)))  #Weighting each value in momentum space by the diagonalization factor
+    xDomain = ifft(ifftshift(weightedψ))
     return xDomain
 end
 
@@ -40,9 +40,9 @@ function normalization(ψ1) #Normalization of the Wavefunction (done discretely)
 end
 
 function calculatedEnergy(ψ1)
-    kψ = fft(ψ1)
+    kψ = fftshift(fft(ψ1))
     ψstar = conj(ψ1)
-    KE = (1/(2*mass)) * ψstar .* ifft((k.^2) .* kψ)
+    KE = (1/(2*mass)) * ψstar .* ifft(ifftshift((k.^2) .* kψ))
     PE = ψstar .* potentialArray .* ψ1
     return sqrt(sum(abs2.(KE+PE) .* δx))
 end
@@ -88,13 +88,25 @@ end
 
 
 plot(
-    plot(xGrid, normalization(real(IC(xGrid))), title = "Initial"),
-    plot(xGrid, real(ψ1), title = "1 Second"),
-    plot(xGrid, potentialArray, title="Potential Well"),
-    plot(xGrid, real(ψ2), title = "5 Seconds"),
-    plot(xGrid, real(ψ3), title = "10 Seconds"),
-    plot(xGrid, real(ψ4), title = "20 Seconds"),
-    plot(xGrid, real(ψ5), title = "60 Seconds"),
-    plot(xGrid, real(ψ6), title = "90 Seconds"),
+    plot(xGrid, normalization(real(IC(xGrid))), title = "Initial", label=false),
+    plot(xGrid, (real(ψ1)), title = "1 Second", label=false),
+    plot(xGrid, potentialArray, title="Potential Well", label=false),
+    plot(xGrid, (real(ψ2)), title = "5 Seconds", label=false),
+    plot(xGrid, (real(ψ3)), title = "10 Seconds", label=false),
+    plot(xGrid, (real(ψ4)), title = "20 Seconds", label=false),
+    plot(xGrid, (real(ψ5)), title = "60 Seconds", label=false),
+    plot(xGrid, (real(ψ6)), title = "90 Seconds", label=false),
+    plot(1:90*j+1, energyArray, title="Energy Evolution", xlabel="Time(s)", label=false)
+)
+
+plot(
+    plot(k, abs.(normalization(fftshift(fft(IC(xGrid))))), title = "Initial", label=false),
+    plot(k, abs.(fftshift(fft(ψ1))), title = "1 Second", label=false),
+    plot(k, potentialArray, title="Potential Well", label=false),
+    plot(k, abs.(fftshift(fft(ψ2))), title = "5 Seconds", label=false),
+    plot(k, abs.(fftshift(fft(ψ3))), title = "10 Seconds", label=false),
+    plot(k, abs.(fftshift(fft(ψ4))), title = "20 Seconds", label=false),
+    plot(k, abs.(fftshift(fft(ψ5))), title = "60 Seconds", label=false),
+    plot(k, abs.(fftshift(fft(ψ6))), title = "90 Seconds", label=false),
     plot(1:90*j+1, energyArray, title="Energy Evolution", xlabel="Time(s)")
 )

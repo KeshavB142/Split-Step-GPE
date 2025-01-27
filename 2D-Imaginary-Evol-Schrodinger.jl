@@ -37,7 +37,7 @@ function IC(xArray, yArray)
     zArray = spzeros(Int64(i), Int64(i))
     for i in eachindex(xArray)
         for j in eachindex(yArray)
-            zArray[i,j] = (1/(π)) .* exp(-1 * ((xArray[i]-4.0)^2) / 2) .* exp.(-1*((yArray[j]-2.0)^2)/ 2) #Infinite Square Well Wavefunction
+            zArray[i,j] = (1/(π)) .* exp(-1 * ((xArray[i])^2) / 2) .* exp.(-1*((yArray[j])^2)/ 2) #Infinite Square Well Wavefunction
         end
     end #Initial Condition Wavefunction
     return Matrix(zArray) #Numerical Array representing wavefunction
@@ -45,8 +45,8 @@ end
 
 function kineticOperatorStep(m, ψ1) #Time Step Operation for the Kinetic Operator 
     weights = exp.(-1*((kNormGrid.^2)./(2*m)) .* (δt / 2)) #Calculation of the diagonalization factor
-    weightedψ = weights .* fft(ψ1)  #Weighting each value in momentum space by the diagonalization factor
-    xDomain = ifft(weightedψ)
+    weightedψ = weights .* fftshift(fft(ψ1))  #Weighting each value in momentum space by the diagonalization factor
+    xDomain = ifft(ifftshift(weightedψ))
     return xDomain
 end
 
@@ -62,9 +62,9 @@ function normalization(ψ1) #Normalization of the Wavefunction (done discretely)
 end
 
 function calculatedEnergy(ψ1)
-    kψ = fft(ψ1)
+    kψ = fftshift(fft(ψ1))
     ψstar = conj(ψ1)
-    KE = (1/(2*mass)) * ψstar .* ifft((kNormGrid.^2) .* kψ)
+    KE = (1/(2*mass)) * ψstar .* ifft(ifftshift((kNormGrid.^2) .* kψ))
     PE = ψstar .* potentialArray .* ψ1
     return sqrt(sum(abs2.(KE+PE) .* δx))
 end
