@@ -9,6 +9,7 @@ i = 10^2
 
 mass = 1 #Particle mass
 δt = 10^(-2) #Time step spacing
+j = 10^2
 
 n = -10 #Real line starting value
 xGrid = LinRange(n, L+n, Int64(i)) #Creates x-axis for the 3D space
@@ -60,6 +61,16 @@ function normalization(ψ1) #Normalization of the Wavefunction (done discretely)
     return (ψ1 ./ L2Norm)
 end
 
+function calculatedEnergy(ψ1)
+    kψ = fft(ψ1)
+    ψstar = conj(ψ1)
+    KE = (1/(2*mass)) * ψstar .* ifft((kNormGrid.^2) .* kψ)
+    PE = ψstar .* potentialArray .* ψ1
+    return sqrt(sum(abs2.(KE+PE) .* δx))
+end
+
+energyArray = zeros(Int64(60*j)+1)
+energyArray[1] = calculatedEnergy(normalization(IC(xGrid, yGrid)))
 function splitStepEvolution(time)
 
     t = time #Complete time evolution
@@ -68,7 +79,7 @@ function splitStepEvolution(time)
     ϵ = 10^-20 #Convergence factor
 
     ψ = IC(xGrid, yGrid) #Initial condition Assignment
-
+    i = 1
     while τ <= t
 
         #Split-Step Evolution
@@ -77,26 +88,29 @@ function splitStepEvolution(time)
         ψ = normalization(ψ)
         #print(maximum(real(ψ)))
         ψ = potentialOperatorStep(potentialArray, ψ)
+        ψ = normalization(ψ)
         #print(maximum(real(ψ)))
         ψ = kineticOperatorStep(mass, ψ)
         #print(maximum(real(ψ)))
         ψ = normalization(ψ)
         #println(maximum(real(ψ)))
-
+        i+=1
+        energyArray[i] = calculatedEnergy(ψ)
         τ += δt
     end
     return ψ
 end
 
 ψ1 = splitStepEvolution(1)
-ψ2 = splitStepEvolution(3)
-ψ3 = splitStepEvolution(5)
+ψ2 = splitStepEvolution(30)
+ψ3 = splitStepEvolution(60)
 
 plot(
     surface(xGrid, yGrid, potentialArray, title="Potential Well", colorbar=false),
     surface(xGrid, yGrid, normalization(real(IC(xGrid, yGrid))), title = "Initial Wavefunction", colorbar=false),
     surface(xGrid, yGrid, real(ψ1), title = "1 Second", xlabel = "Position(x)", ylabel = "Position (y)", zlabel = "Wavefunction(ψ)", colorbar=false),
-    surface(xGrid, yGrid, real(ψ2), title = "3 Seconds", colorbar=false),
-    surface(xGrid, yGrid, real(ψ3), title = "5 Seconds", colorbar=false),
+    surface(xGrid, yGrid, real(ψ2), title = "30 Seconds", colorbar=false),
+    surface(xGrid, yGrid, real(ψ3), title = "60 Seconds", colorbar=false),
+    plot(1:60*j+1, energyArray, label = "Energy Evolution", xlabel="Time(s)")
 #xlims!(xGrid[250000],xGrid[750000])
 )
