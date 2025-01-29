@@ -36,7 +36,7 @@ Kx = Ky = nothing #Removing momentum space building vectors from memory
 function IC(xArray, yArray)
     zArray = spzeros(Int64(i), Int64(i))
     for i in eachindex(xArray)
-        zArray[i,:] = sin.(π .* xArray[i]) .* sin.(π .* yArray) #Infinite Square Well Wavefunction
+        zArray[i,:] = exp.(-xArray[i].^2) * exp.(-yArray.^2) #Infinite Square Well Wavefunction
     end #Initial Condition Wavefunction
     return Matrix(zArray) #Numerical Array representing wavefunction
 end
@@ -67,7 +67,7 @@ function calculatedEnergy(ψ1)
     return sqrt(sum(abs2.(KE+PE) .* δx))
 end
 
-energyArray = zeros((5*j)+1)
+energyArray = zeros((360*j)+1)
 energyArray[1] = calculatedEnergy(normalization(IC(xGrid,yGrid)))
 function splitStepEvolution(time)
 
@@ -82,16 +82,17 @@ function splitStepEvolution(time)
     return ψ
 end
 
-ψout= [splitStepEvolution(i) for i in 0:5] #Time period evolved Wavefns
-timeLabelArray = ["t="*string(i)*"s" for i in 1:5] #Label array for time lines
+ψout= [splitStepEvolution(i) for i in 0:72:360] #Time period evolved Wavefns
+timeLabelArray = ["t="*string(i)*"s" for i in 0:72:350] #Label array for time lines
 
 plot(
-    surface(xGrid, yGrid, potentialArray, title = "Potential Well", colorbar=false),
+    #surface(xGrid, yGrid, potentialArray, title = "Potential Well", colorbar=false),
     surface(xGrid, yGrid, real(ψout[1]), colorbar=false),
     surface(xGrid, yGrid, real(ψout[2]), colorbar=false),
     surface(xGrid, yGrid, real(ψout[3]), colorbar=false),
     surface(xGrid, yGrid, real(ψout[4]), colorbar=false),
     surface(xGrid, yGrid, real(ψout[5]), colorbar=false),
+    surface(xGrid, yGrid, real(ψout[6]), colorbar=false),
 )
 #label = timeLabelArray[i]
 #plot(1:5*j+1, energyArray, title="Energy Evolution", xlabel="Time(s)", label=false)
