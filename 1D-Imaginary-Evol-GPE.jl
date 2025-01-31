@@ -2,7 +2,7 @@ using FFTW
 using LinearAlgebra
 using Plots
 
-δx = 10^(-3) #Grid spacing (Most practical + accurate spacing on my machine)
+δx = 10^(-4) #Grid spacing (Most practical + accurate spacing on my machine)
 L = 30 #Interval Size
 i = Int64(round(1 / δx))
 
@@ -14,7 +14,9 @@ n = -15 #Real line starting value
 xGrid = LinRange(n, L+n, i) #Creates 1D discrete line of real space
 k = LinRange(-π/(L), π/(L), i) #Creates 1D discrete line of momentum space
 
-potentialArray = .005 .* ((xGrid).^2) #Potential values at each point on the grid
+potentialArray = .5 .* ((xGrid).^2) #Potential values at each point on the grid
+N = 10^3 #Number of particles
+g = 10 #Strength of interaction term
 
 function IC(xArray)
     yArray = exp.((-(xArray .- 3).^2)) #Initial Condition Wavefunction
@@ -29,8 +31,8 @@ function kineticOperatorStep(m, ψ1) #Time Step Operation for the Kinetic Operat
 end
 
 function potentialOperatorStep(V, ψ1) #Time Step Operation for the Potential Operator
-    X = -1 .* V .* δt
-    operatedPsi = exp.(X) .* ψ1 
+    X = -1 .* (V .+ g.*abs2.(ψ1)) .* δt
+    operatedPsi = (exp.(X)) .* ψ1 
     return operatedPsi
 end
 
@@ -39,25 +41,26 @@ function normalization(ψ1) #Normalization of the Wavefunction (done discretely)
     return (ψ1 ./ L2Norm)
 end
 
-function calculatedEnergy(ψ1)
+function calculatedChemPotential(ψ1)
     kψ = fftshift(fft(ψ1))
     ψstar = conj(ψ1)
     KE = (1/(2*mass)) * ψstar .* ifft(ifftshift((k.^2) .* kψ))
     PE = ψstar .* potentialArray .* ψ1
-    return sqrt(sum(abs2.(KE+PE) .* δx))
+    IE = g .* abs2.(ψ1)
+    return sqrt(sum(abs2.(KE+PE+IE) * δx))
 end
 
-energyArray = zeros((360*j))
-energyArray[1] = calculatedEnergy(normalization(IC(xGrid)))
+μArray = zeros((360*j))
+μArray[1] = calculatedChemPotential(sqrt(N) .* normalization(IC(xGrid)))
 function splitStepEvolution(time)
 
     t = time #Complete time evolution
     Nmax = Int64(round(t/(δt)))
-    ψ = normalization(IC(xGrid)) #Initial condition Assignment
+    ψ =  sqrt(N).*normalization(IC(xGrid)) #Initial condition Assignment
     #Split Step Evolution
     for i = 1:Nmax
-        ψ = normalization(kineticOperatorStep(mass,potentialOperatorStep(potentialArray, normalization(kineticOperatorStep(mass, ψ)))))
-        energyArray[i] = calculatedEnergy(ψ)
+        ψ = sqrt(N).*normalization(kineticOperatorStep(mass,potentialOperatorStep(potentialArray, normalization(kineticOperatorStep(mass, ψ)))))
+        μArray[i] = calculatedEnergy(ψ)
     end
     return ψ
 end
@@ -65,8 +68,11 @@ end
 ψout= [splitStepEvolution(i) for i in 0:45:360] #Time period evolved Wavefns
 timeLabelArray = ["t="*string(i)*"s" for i in 0:45:360] #Label array for time lines
 
+mag = ψout[8] .* conj(ψout[8])
+mag1 = ψout[1] .* conj(ψout[1])
 plot(xGrid, potentialArray, title = "Wavefunction vs. Position", label="Potential Well")
-plot!(xGrid, real(ψout))
+plot!(xGrid, real(mag))
+#plot!(xGrid, real(mag1))
 
 #label = timeLabelArray[i]
-#plot(1:5*j, energyArray, title="Energy Evolution", xlabel="Time(s)", label=false)
+#plot(1:5*j+1, μArray, title="μ Evolution", xlabel="Time(s)", label=false)

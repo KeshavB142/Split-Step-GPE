@@ -67,7 +67,7 @@ function calculatedEnergy(ψ1)
     return sqrt(sum(abs2.(KE+PE) .* δx))
 end
 
-energyArray = zeros((360*j)+1)
+energyArray = zeros((360*j))
 energyArray[1] = calculatedEnergy(normalization(IC(xGrid,yGrid)))
 function splitStepEvolution(time)
 
@@ -95,4 +95,4 @@ plot(
     surface(xGrid, yGrid, real(ψout[6]), colorbar=false),
 )
 #label = timeLabelArray[i]
-#plot(1:5*j+1, energyArray, title="Energy Evolution", xlabel="Time(s)", label=false)
+#plot(1:5*j, energyArray, title="Energy Evolution", xlabel="Time(s)", label=false)
